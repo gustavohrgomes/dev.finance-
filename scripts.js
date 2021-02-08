@@ -9,19 +9,16 @@ const Modal = {
 
 const transactions = [
   {
-    id: 1,
     description: "Energia",
     amount: -50000,
     date: "23/01/2021",
   },
   {
-    id: 2,
     description: "Criação Website",
     amount: 500000,
     date: "23/01/2021",
   },
   {
-    id: 3,
     description: "Internet",
     amount: -20000,
     date: "23/01/2021",
@@ -29,25 +26,45 @@ const transactions = [
 ];
 
 const Transaction = {
-  imcomes() {},
-  expenses() {},
-  total() {},
-};
+  all: transactions,
+  add(transaction) {
+    Transaction.all.push(transaction);
 
-const Utils = {
-  formatCurrency(value) {
-    const sign = Number(value) < 0 ? "-" : "";
+    App.reload();
+  },
 
-    value = String(value).replace(/\D/g, "");
+  remove(index) {
+    Transaction.all.splice(index, 1);
 
-    value = Number(value) / 100;
+    App.reload();
+  },
 
-    value = value.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
+  incomes() {
+    let income = 0;
+
+    Transaction.all.forEach((transaction) => {
+      if (transaction.amount > 0) {
+        income += transaction.amount;
+      }
     });
 
-    return sign + value;
+    return income;
+  },
+
+  expenses() {
+    let expense = 0;
+
+    Transaction.all.forEach((transaction) => {
+      if (transaction.amount < 0) {
+        expense += transaction.amount;
+      }
+    });
+
+    return expense;
+  },
+
+  total() {
+    return Transaction.incomes() + Transaction.expenses();
   },
 };
 
@@ -76,8 +93,88 @@ const DOM = {
 
     return html;
   },
+  updateBalance() {
+    document.getElementById("incomeDisplay").innerHTML = Utils.formatCurrency(
+      Transaction.incomes()
+    );
+
+    document.getElementById("expensesDisplay").innerHTML = Utils.formatCurrency(
+      Transaction.expenses()
+    );
+
+    document.getElementById("totalDisplay").innerHTML = Utils.formatCurrency(
+      Transaction.total()
+    );
+  },
+
+  cleanTransactions() {
+    DOM.transactionsContainer.innerHTML = "";
+  },
 };
 
-transactions.forEach(function (transaction) {
-  DOM.addTransaction(transaction);
-});
+const Utils = {
+  formatCurrency(value) {
+    const sign = Number(value) < 0 ? "-" : "";
+
+    value = String(value).replace(/\D/g, "");
+
+    value = Number(value) / 100;
+
+    value = value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+    return sign + value;
+  },
+};
+
+const Form = {
+  description: document.querySelector("#description"),
+  amount: document.querySelector("#amount"),
+  date: document.querySelector("#date"),
+
+  getValues() {
+    return {
+      description: Form.description.value,
+      amount: Form.amount.value,
+      date: Form.date.value,
+    };
+  },
+  validateFields() {
+    const { description, amount, date } = Form.getValues();
+
+    if (
+      description.trim() === "" ||
+      amount.trim() === "" ||
+      date.trim() === ""
+    ) {
+      throw new Error("Por favor, preencha todos os campos");
+    }
+  },
+  submit(event) {
+    event.preventDefault();
+
+    try {
+      Form.validateFields();
+    } catch (error) {
+      alert(error.message);
+    }
+  },
+};
+
+const App = {
+  init() {
+    Transaction.all.forEach((transaction) => {
+      DOM.addTransaction(transaction);
+    });
+
+    DOM.updateBalance();
+  },
+  reload() {
+    DOM.cleanTransactions();
+    App.init();
+  },
+};
+
+App.init();
